@@ -35,13 +35,11 @@
 #define DAC_LDAC_AD2CFG AD2PCFGLbits.PCFG13
 
 void dac_initialize()
-{
-    CLEARBIT(AD1CON1bits.ADON);
-    
+{   
     // set AN10, AN11 AN13 to digital mode
-    CLEARBIT(AD1PCFGLbits.PCFG10);
-    CLEARBIT(AD1PCFGLbits.PCFG11);
-    CLEARBIT(AD1PCFGLbits.PCFG13);
+    SETBIT(AD1PCFGLbits.PCFG10);
+    SETBIT(AD1PCFGLbits.PCFG11);
+    SETBIT(AD1PCFGLbits.PCFG13);
     
     // this means AN10 will become RB10, AN11->RB11, AN13->RB13
     // see datasheet 11.3
@@ -53,9 +51,10 @@ void dac_initialize()
     CLEARBIT(TRISBbits.TRISB13);
     
     // set default state: CS=??, SCK=??, SDI=??, LDAC=??
-    SETBIT(AD1CON1bits.AD12B);
-    AD1CON1bits.FORM = 0;
-    AD1CON1bits.SSRC = 0x7;
+    SETBIT(PORTDbits.RD8); //NOT CS = 1 - default idle
+    CLEARBIT(PORTBbits.RB10); // SCK = default low
+    CLEARBIT(PORTBbits.RB11); // SDI = default low
+    SETBIT(PORTBbits.RB13); // NOT LDAC = 1 no updates
     
 }
 
@@ -92,13 +91,36 @@ void timer_initialize()
 
 void main_loop()
 {
+    uint8_t i = 0;
+    uint16_t cmd = 0x37D0;
+    
     // print assignment information
     lcd_printf("Lab03: DAC");
     lcd_locate(0, 1);
-    lcd_printf("Group: GroupName");
+    lcd_printf("Group: SP5");
     
     while(TRUE)
     {
-        // main loop code
+        CLEARBIT(PORTDbits.RD8);
+        for(i = 0; i < 16; i++)
+        {
+            CLEARBIT(PORTBbits.RB11); //SCK to low
+            
+            if (cmd&0x8000) //check MSB if its 1
+                SETBIT(PORTBbits.RB10); // SDI to data
+            else
+                CLEARBIT(PORTBbits.RB10); // SDI to data
+            
+            SETBIT(PORTBbits.RB11); // SCK to high
+            Nop();            
+            
+            cmd <<= 1; // shift cmd value to the left, to check next bit
+        }
+        SETBIT(PORTDbits.RD8);
+        
+        CLEARBIT(PORTBbits.RB13);
+        Nop();
+        SETBIT(PORTBbits.RB13);
+        Nop();
     }
 }
