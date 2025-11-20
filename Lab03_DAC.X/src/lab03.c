@@ -45,18 +45,19 @@ void dac_initialize()
     // see datasheet 11.3
     
     // set RD8, RB10, RB11, RB13 as output pins
-    CLEARBIT(TRISDbits.TRISD8);
-    CLEARBIT(TRISBbits.TRISB10);
-    CLEARBIT(TRISBbits.TRISB11);
-    CLEARBIT(TRISBbits.TRISB13);
+    CLEARBIT(DAC_CS_TRIS);
+    CLEARBIT(DAC_SDI_TRIS);
+    CLEARBIT(DAC_SCK_PORT);
+    CLEARBIT(DAC_LDAC_TRIS);
     
     // set default state: CS=??, SCK=??, SDI=??, LDAC=??
-    SETBIT(PORTDbits.RD8); //NOT CS = 1 - default idle
-    CLEARBIT(PORTBbits.RB10); // SCK = default low
+    SETBIT(DAC_CS_PORT); //NOT CS = 1 - default idle
     Nop();
-    CLEARBIT(PORTBbits.RB11); // SDI = default low
+    CLEARBIT(DAC_SDI_PORT); // SCK = default low
     Nop();
-    SETBIT(PORTBbits.RB13); // NOT LDAC = 1 no updates
+    CLEARBIT(DAC_SCK_PORT); // SDI = default low
+    Nop();
+    SETBIT(DAC_LDAC_PORT); // NOT LDAC = 1 no updates
     Nop();
     
 }
@@ -101,18 +102,20 @@ void main_loop()
     lcd_printf("Lab03: DAC");
     lcd_locate(0, 1);
     lcd_printf("Group: SP5");
-    
-    while(TRUE)
-    {
-       
+
         CLEARBIT(DAC_CS_PORT);
 
         for(i = 0; i < 16; i++)
         {
-            if (cmd & (1 << (15 - i)))
-                SETBIT(DAC_SDI_PORT);
-            else
-                CLEARBIT(DAC_SDI_PORT);
+            //if (cmd >> (15 - i) & 1) {
+              // SETBIT(DAC_SDI_PORT);
+              //  lcd_locate(i, 4);
+              //  lcd_printf("1");
+           // }
+            //else
+                //CLEARBIT(DAC_SDI_PORT);
+             DAC_SDI_PORT = (cmd >> (15 - i) & 0b1);
+    
             Nop();
             SETBIT(DAC_SCK_PORT);
             Nop();
@@ -121,10 +124,10 @@ void main_loop()
         }
         
         SETBIT(DAC_CS_PORT);
-        
+        Nop();
         CLEARBIT(DAC_LDAC_PORT);
         Nop();
         Nop();
         SETBIT(DAC_LDAC_PORT);
     }
-}
+
