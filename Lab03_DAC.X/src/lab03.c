@@ -37,9 +37,9 @@
 void dac_initialize()
 {   
     // set AN10, AN11 AN13 to digital mode
-    SETBIT(AD1PCFGLbits.PCFG10);
-    SETBIT(AD1PCFGLbits.PCFG11);
-    SETBIT(AD1PCFGLbits.PCFG13);
+    SETBIT(DAC_SDI_AD1CFG);
+    SETBIT(DAC_SCK_AD1CFG);
+    SETBIT(DAC_LDAC_AD1CFG);
     
     // this means AN10 will become RB10, AN11->RB11, AN13->RB13
     // see datasheet 11.3
@@ -53,8 +53,11 @@ void dac_initialize()
     // set default state: CS=??, SCK=??, SDI=??, LDAC=??
     SETBIT(PORTDbits.RD8); //NOT CS = 1 - default idle
     CLEARBIT(PORTBbits.RB10); // SCK = default low
+    Nop();
     CLEARBIT(PORTBbits.RB11); // SDI = default low
+    Nop();
     SETBIT(PORTBbits.RB13); // NOT LDAC = 1 no updates
+    Nop();
     
 }
 
@@ -91,8 +94,8 @@ void timer_initialize()
 
 void main_loop()
 {
-    uint8_t i = 0;
-    uint16_t cmd = 0x37D0;
+    int i = 0;
+    uint16_t cmd = 0b0011001111101000;
     
     // print assignment information
     lcd_printf("Lab03: DAC");
@@ -101,26 +104,27 @@ void main_loop()
     
     while(TRUE)
     {
-        CLEARBIT(PORTDbits.RD8);
+       
+        CLEARBIT(DAC_CS_PORT);
+
         for(i = 0; i < 16; i++)
         {
-            CLEARBIT(PORTBbits.RB11); //SCK to low
-            
-            if (cmd&0x8000) //check MSB if its 1
-                SETBIT(PORTBbits.RB10); // SDI to data
+            if (cmd & (1 << (15 - i)))
+                SETBIT(DAC_SDI_PORT);
             else
-                CLEARBIT(PORTBbits.RB10); // SDI to data
-            
-            SETBIT(PORTBbits.RB11); // SCK to high
-            Nop();            
-            
-            cmd <<= 1; // shift cmd value to the left, to check next bit
+                CLEARBIT(DAC_SDI_PORT);
+            Nop();
+            SETBIT(DAC_SCK_PORT);
+            Nop();
+            CLEARBIT(DAC_SCK_PORT);
+            Nop();
         }
-        SETBIT(PORTDbits.RD8);
         
-        CLEARBIT(PORTBbits.RB13);
+        SETBIT(DAC_CS_PORT);
+        
+        CLEARBIT(DAC_LDAC_PORT);
         Nop();
-        SETBIT(PORTBbits.RB13);
         Nop();
+        SETBIT(DAC_LDAC_PORT);
     }
 }
