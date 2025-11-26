@@ -86,7 +86,7 @@ void timer_initialize()
     T1CONbits.TCS=1; //external 32kHz
     TMR1 = 0;
 
-    PR1 = 31;
+    PR1 = 31; //32 ticks = 1 ms (32768/1000)
 
     IFS0bits.T1IF = 0;
     IPC0bits.T1IP = 0x01;
